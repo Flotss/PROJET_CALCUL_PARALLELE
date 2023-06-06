@@ -12,7 +12,7 @@ public class LancerRaytracer {
     public static void main(String args[]) {
 
         // Le fichier de description de la scène si pas fournie
-        String fichier_description = "simple.txt";
+        String fichier_description = "resources/simple.txt";
 
         // largeur et hauteur par défaut de l'image à reconstruire
         int largeur = 512, hauteur = 512;
