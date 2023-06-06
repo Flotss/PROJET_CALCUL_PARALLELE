@@ -44,7 +44,7 @@ public class Materiau implements Serializable {
      *                  pour le rouge, le vert et le bleu
      * @param dif       tableau contenant les coefficients de réflexion diffus
      *                  pour le rouge, le vert et le bleu
-     * @param dif       tableau contenant les coefficients de réflexion spéculaire
+     * @param spec       tableau contenant les coefficients de réflexion spéculaire
      *                  pour le rouge, le vert et le bleu
      * @param coeffSpec le coefficient de spécularité du matériau
      */
