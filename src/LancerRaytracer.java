@@ -15,7 +15,7 @@ public class LancerRaytracer {
         String fichier_description = "resources/copy.txt";
 
         // largeur et hauteur par défaut de l'image à reconstruire
-        int largeur = 1000, hauteur = 1000;
+        int largeur = 4000, hauteur = 4000;
 
         if (args.length > 0) {
             fichier_description = args[0];
@@ -41,8 +41,7 @@ public class LancerRaytracer {
         // Ici on calcule toute l'image (0,0) -> (largeur, hauteur)
 
         int x0 = 0, y0 = 0;
-        int longX = 500-x0, longY = 500-y0;
-        int l = largeur-longX-x0, h = hauteur-longY-y0;
+        int l = largeur-x0, h = hauteur-y0;
 
         // Chronométrage du temps de calcul
         Instant debut = Instant.now();
@@ -58,7 +57,5 @@ public class LancerRaytracer {
         // Affichage de l'image calculée
         disp.setImage(image, x0, y0);
 
-        image = scene.compute(500, 500, 500, 500);
-        disp.setImage(image, 500, 500);
     }
 }

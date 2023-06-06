@@ -13,8 +13,13 @@ public class MainServeur {
 
     public static void main(String[] args) throws RemoteException {
 
+        int port = 1099;
+        if(args.length>0){
+            port = Integer.parseInt(args[0]);
+        }
+
         ServiceRaytracer sr = (ServiceRaytracer) UnicastRemoteObject.exportObject(new Calcule(), 0);
-        Registry reg = LocateRegistry.createRegistry(1099);
+        Registry reg = LocateRegistry.createRegistry(port);
         reg.rebind("calcul", sr);
         System.out.println("\n"+reg);
 
