@@ -21,3 +21,8 @@ Par exemple, si on a 4 machines, l'image sera divisée en 4 parties, qui seront 
 Voici un schéma qui illustre le fonctionnement du programme :
 
 <img src="resources/Projet_ULTIME_RMI.png" alt="projet Ultime" width="600"/>
+
+### Tester le programme en modifiant ses paramètres (sur la ligne de commande).
+### Observer le temps de d'exécution en fonction de la taille de l'image calculée. Vous pouvez faire une courbe (temps de calcul et tailles d'image).
+
+<img src="resources/Grapghique_taille_temps.png" alt="temps de calcul"/>
