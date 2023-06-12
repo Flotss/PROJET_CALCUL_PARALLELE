@@ -1,27 +1,22 @@
-import raytracer.Disp;
-import raytracer.Image;
-import raytracer.Scene;
+import utils.Destination;
 
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.time.Duration;
-import java.time.Instant;
 
 public class MainServeur {
 
-    public static void main(String[] args) throws RemoteException {
+    public static void main(String[] args) throws Exception {
+        Destination destination = Destination.pickDestination(args);
 
-        int port = 1099;
-        if(args.length>0){
-            port = Integer.parseInt(args[0]);
-        }
+        Server raytracer = new Server();
+        ServiceRaytracer sr = (ServiceRaytracer) UnicastRemoteObject.exportObject(raytracer, 0);
 
-        ServiceRaytracer sr = (ServiceRaytracer) UnicastRemoteObject.exportObject(new Calcule(), 0);
-        Registry reg = LocateRegistry.createRegistry(port);
-        reg.rebind("calcul", sr);
-        System.out.println("\n"+reg);
+        Registry reg = LocateRegistry.getRegistry(destination.getHost(), destination.getPort());
+        reg.rebind("raytracer", sr);
 
+        System.out.println("\n" + reg);
     }
+
 }
