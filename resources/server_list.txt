@@ -1,2 +1,8 @@
-localhost:8080
-192.109.125.05:8080
+localhost:1099
+localhost:1100
+localhost:1101
+localhost:1102
+localhost:1103
+localhost:1104
+localhost:1105
+localhost:1106
