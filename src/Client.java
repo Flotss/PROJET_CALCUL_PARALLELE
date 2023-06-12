@@ -2,90 +2,126 @@ import raytracer.Disp;
 import raytracer.Image;
 import raytracer.Scene;
 
-import java.lang.reflect.Array;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.rmi.NotBoundException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 
 public class Client {
 
-    public static void main(String[] args) throws RemoteException {
+    private final int width, height;
+    private final ArrayList<ServiceRaytracer> servers = new ArrayList<>();
+    private final Scene scene;
 
-        ArrayList<ServiceRaytracer> serveurs = new ArrayList<ServiceRaytracer>();
+    /**
+     * @param width          Width of the image
+     * @param height         Height of the image
+     * @param sceneFile      Scene to render
+     * @param serverListFile List of servers to use
+     * @throws IOException If the server list file is not found
+     */
+    public Client(int width, int height, File sceneFile, File serverListFile) throws IOException {
+        this.width = width;
+        this.height = height;
+        this.scene = new Scene(sceneFile.getAbsolutePath(), width, height);
 
-        String[] serveur = new String[]{"localhost"};    // par défaut le serveur est sur la même machine
-        int[] port = new int[]{1099, 8080, 8081, 8082};                      // le port de la rmiregistry par défaut
-        /*if(args.length > 0)
-            serveur[0]=args[0];
-        if(args.length > 1)
-            port=Integer.parseInt(args[1]);*/
-        if (args.length > 3) {
-            serveur = args;
+        for (String registryAddress : Files.readAllLines(serverListFile.toPath())) {
+            try {
+                ServiceRaytracer raytracer = getServer(registryAddress);
+                servers.add(raytracer);
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+            }
         }
+    }
+
+    /**
+     * @param registryAddress Address of the registry (127.0.0.1:1099)
+     * @return ServiceRaytracer from the registry
+     * @throws Exception If the registry is not found or if the registry doesn't have a raytracer service / an invalid service
+     */
+    private ServiceRaytracer getServer(String registryAddress) throws Exception {
+        String[] address = registryAddress.split(":");
+        Registry registry;
 
         try {
-            //addition = (ServiceCalcul) LocateRegistry.getRegistry(serveur[0], port).lookup("Addition");
-            serveurs.add((ServiceRaytracer) LocateRegistry.getRegistry(serveur[0], port[0]).lookup("calcul"));
-            serveurs.add((ServiceRaytracer) LocateRegistry.getRegistry(serveur[0], port[1]).lookup("calcul"));
-            serveurs.add((ServiceRaytracer) LocateRegistry.getRegistry(serveur[0], port[2]).lookup("calcul"));
-            serveurs.add((ServiceRaytracer) LocateRegistry.getRegistry(serveur[0], port[3]).lookup("calcul"));
-        } catch (Exception e) {
-            System.out.println(e.getClass().toString());
+            registry = LocateRegistry.getRegistry(address[0], Integer.parseInt(address[1]));
+        } catch (RemoteException e) {
+            throw new Exception(address[0] + ":" + address[1] + " registry not found");
         }
 
-        String fichier_description = "resources/copy.txt";
+        Remote raytracer;
+        try {
+            raytracer = registry.lookup("raytracer");
+        } catch (NotBoundException e) {
+            throw new Exception(address[0] + ":" + address[1] + " registry doesn't have a raytracer service");
+        }
 
-        int largeur = 4000, hauteur = 4000;
+        if (!(raytracer instanceof ServiceRaytracer)) {
+            throw new Exception(address[0] + ":" + address[1] + " registry doesn't have a raytracer service");
+        }
 
-        Disp disp = new Disp("Raytracer", largeur, hauteur);
+        return (ServiceRaytracer) raytracer;
+    }
 
-        Scene scene = new Scene(fichier_description, largeur, hauteur);
+    /**
+     * Starts the worker to render the image
+     * It will split the image in X subscenes, where X is the number of servers
+     * and ask each server to render a subscene, each in a different thread to render the image faster
+     * The method will be blocking until all the threads are finished
+     *
+     * @param disp Disp to render the image
+     */
+    private void startWorker(Disp disp) {
+        int subSceneWidth = width / servers.size();
+        int subSceneHeight = height;
 
-        System.out.println("debut");
+        ArrayList<Thread> threads = new ArrayList<>();
 
-        new Thread(() -> {
+        for (int i = 0; i < servers.size(); i++) {
+            int finalI = i;
+            Thread thread = new Thread(() -> {
+                try {
+                    Image subScene = servers.get(finalI).renderSubScene(scene, subSceneWidth, subSceneHeight, finalI * subSceneWidth, 0);
+                    disp.setImage(subScene, finalI * subSceneWidth, 0);
+                } catch (RemoteException e) {
+                    System.err.println(e.getMessage());
+                }
+            });
+            thread.start();
+            threads.add(thread);
+        }
+
+        for (Thread thread : threads) {
             try {
-                disp.setImage(serveurs.get(0).renderSubScene(scene, 2000, 2000, 0, 0), 0, 0);
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
+                thread.join();
+            } catch (InterruptedException ignored) {
             }
-        }).start();
-        new Thread(() -> {
-            try {
-                disp.setImage(serveurs.get(2).renderSubScene(scene, 2000, 2000, 0, 2000), 0, 2000);
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
-            }
-        }).start();
-        new Thread(() -> {
-            try {
-                disp.setImage(serveurs.get(1).renderSubScene(scene, 2000, 2000, 2000, 0), 2000, 0);
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
-            }
-        }).start();
-        new Thread(() -> {
-            try {
-                disp.setImage(serveurs.get(3).renderSubScene(scene, 2000, 2000, 2000, 2000), 2000, 2000);
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
-            }
-        }).start();
+        }
+    }
 
-/*        System.out.println("debut");
+    public static void main(String[] args) throws IOException {
+        final int WIDTH = 1920, HEIGHT = 1080;
+
+        File sceneFile = new File("resources/simple.txt");
+        File serverListFile = new File("resources/server_list.txt");
+        Client client = new Client(WIDTH, HEIGHT, sceneFile, serverListFile);
+
+        Disp disp = new Disp("Raytracer", WIDTH, HEIGHT);
 
         Instant debut = Instant.now();
-
-        Image image = scene.compute(2000, 2000, 2000, 2000);
-
+        client.startWorker(disp);
         Instant fin = Instant.now();
 
         long duree = Duration.between(debut, fin).toMillis();
 
         System.out.println("Image calculée en :" + duree + " ms");
-        disp.setImage(image, 2000, 2000);*/
-
     }
 }
