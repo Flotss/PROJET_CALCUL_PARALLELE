@@ -26,3 +26,13 @@ Voici un schéma qui illustre le fonctionnement du programme :
 ### Observer le temps de d'exécution en fonction de la taille de l'image calculée. Vous pouvez faire une courbe (temps de calcul et tailles d'image).
 
 <img src="resources/Grapghique_taille_temps.png" alt="temps de calcul"/>
+
+
+### Faire un petit schéma de cette architecture
+
+<img src="resources/schéma_architechture.png" alt="projet Ultime" width="600"/>
+
+
+### Si on veux que les calculs se fassent en parallèle que faut-il faire ?
+
+Pour que les calculs se fassent en parallèle, on doit utiliser le multithreading. Grâce au multithreading, on peut exécuter plusieurs tâches en même temps. Dans notre cas, on peut exécuter plusieurs calculs en même temps sur des machines différentes. Ici le client crée des threads qui demande aux "Serveurs" de calculer une partie de l'image. Les serveurs vont calculer les parties de l'image en parallèle. Puis les serveurs vont envoyer les résultats à la machine principale qui va les assembler pour créer l'image finale.
