@@ -73,8 +73,8 @@ public class Client {
 
     /**
      * Starts the worker to render the image
-     * It will split the image in X subscenes, where X is the number of servers
-     * and ask each server to render a subscene, each in a different thread to render the image faster
+     * It will split the image in X sub-scenes, where X is the number of servers
+     * and ask each server to render a sub scene, each in a different thread to render the image faster
      * The method will be blocking until all the threads are finished
      *
      * @param disp Disp to render the image
@@ -124,4 +124,5 @@ public class Client {
 
         System.out.println("Image calculée en :" + duree + " ms");
     }
+
 }
