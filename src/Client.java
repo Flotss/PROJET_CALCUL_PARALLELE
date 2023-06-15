@@ -1,5 +1,4 @@
 import raytracer.Disp;
-import raytracer.Image;
 import raytracer.Scene;
 
 import java.io.File;
@@ -13,12 +12,15 @@ import java.rmi.registry.Registry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.concurrent.*;
 
 public class Client {
 
     private final int width, height;
     private final ArrayList<ServiceRaytracer> servers = new ArrayList<>();
     private final Scene scene;
+    private final BlockingQueue<SubScene> subSceneQueue = new LinkedBlockingQueue<>();
+    private final ConcurrentHashMap<SubScene, ServiceRaytracer> failedSubScenes = new ConcurrentHashMap<>();
 
     /**
      * @param width          Width of the image
@@ -34,8 +36,10 @@ public class Client {
 
         for (String registryAddress : Files.readAllLines(serverListFile.toPath())) {
             try {
+                System.out.println("Connecting to " + registryAddress + "...");
                 ServiceRaytracer raytracer = getServer(registryAddress);
                 servers.add(raytracer);
+                System.out.println("Connected to " + registryAddress);
             } catch (Exception e) {
                 System.err.println(e.getMessage());
             }
@@ -83,27 +87,24 @@ public class Client {
         int subSceneWidth = width / servers.size();
         int subSceneHeight = height;
 
-        ArrayList<Thread> threads = new ArrayList<>();
-
         for (int i = 0; i < servers.size(); i++) {
-            int finalI = i;
-            Thread thread = new Thread(() -> {
-                try {
-                    Image subScene = servers.get(finalI).renderSubScene(scene, subSceneWidth, subSceneHeight, finalI * subSceneWidth, 0);
-                    disp.setImage(subScene, finalI * subSceneWidth, 0);
-                } catch (RemoteException e) {
-                    System.err.println(e.getMessage());
-                }
-            });
-            thread.start();
-            threads.add(thread);
+            SubScene subScene = new SubScene(subSceneWidth * i, 0, subSceneWidth, subSceneHeight);
+            subSceneQueue.add(subScene);
         }
 
-        for (Thread thread : threads) {
-            try {
-                thread.join();
-            } catch (InterruptedException ignored) {
-            }
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(servers.size(), servers.size(), 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+
+        for (int i = 0; i < servers.size(); i++) {
+            executor.execute(new RenderWorker(scene, disp, subSceneQueue, failedSubScenes, servers, servers.get(i)));
+        }
+
+        executor.shutdown();
+
+        try {
+            boolean success = executor.awaitTermination(30, TimeUnit.SECONDS);
+            if (!success) throw new InterruptedException("Couldn't render the image");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -126,3 +127,4 @@ public class Client {
     }
 
 }
+
