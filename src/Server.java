@@ -4,6 +4,7 @@ import raytracer.Scene;
 import java.rmi.RemoteException;
 
 public class Server implements ServiceRaytracer{
+    final int minSubWidth = 5, minSubHeight = 5;
 
     /**
      * @param scene Scene to render
@@ -16,6 +17,7 @@ public class Server implements ServiceRaytracer{
      */
     @Override
     public Image renderSubScene(Scene scene, int width, int height, int x1, int y1) throws RemoteException {
+        System.out.println("Rendering subscene (" + x1 + ", " + y1 + ") (" + (x1 + width) + ", " + (y1 + height) + ")");
         return scene.compute(x1, y1, width, height);
     }
 
