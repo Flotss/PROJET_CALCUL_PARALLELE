@@ -16,6 +16,8 @@ import java.util.concurrent.*;
 
 public class Client {
 
+    private static final int SUBSCENE_MIN_WIDTH_DIVISION = 5;
+    private static final int SUBSCENE_MIN_HEIGHT_DIVISION = 5;
     private final int width, height;
     private final ArrayList<ServiceRaytracer> servers = new ArrayList<>();
     private final Scene scene;
@@ -84,12 +86,17 @@ public class Client {
      * @param disp Disp to render the image
      */
     private void startWorker(Disp disp) {
-        int subSceneWidth = width / servers.size();
-        int subSceneHeight = height;
+        int subSceneWidthDivision = Math.max(SUBSCENE_MIN_WIDTH_DIVISION, servers.size());
+        int subSceneHeightDivision = Math.max(SUBSCENE_MIN_HEIGHT_DIVISION, servers.size());
 
-        for (int i = 0; i < servers.size(); i++) {
-            SubScene subScene = new SubScene(subSceneWidth * i, 0, subSceneWidth, subSceneHeight);
-            subSceneQueue.add(subScene);
+        int subSceneWidth = width / subSceneWidthDivision;
+        int subSceneHeight = height / subSceneHeightDivision;
+
+        for (int i = 0; i < subSceneWidthDivision; i++) {
+            for (int j = 0; j < subSceneHeightDivision; j++) {
+                SubScene subScene = new SubScene(subSceneWidth * i, subSceneHeight * j, subSceneWidth, subSceneHeight);
+                subSceneQueue.add(subScene);
+            }
         }
 
         ThreadPoolExecutor executor = new ThreadPoolExecutor(servers.size(), servers.size(), 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
