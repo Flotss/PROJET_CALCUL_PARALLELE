@@ -1,6 +1,4 @@
 # S4RAIL2_PROJET_CALCUL_PARALLELE
-Bonjour
-
 
 ## Questions
 ### En utilisant votre meilleur outil, votre imagination, décrivez et illustrez comment cela pourrait être réalisé, sans rentrer dans les détails JAVA, que vous n'allez pas tarder à mettre en œuvre.
